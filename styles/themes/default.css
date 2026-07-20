@@ -1,0 +1,242 @@
+/* ============================================================================
+   PetitionHQ — Default theme
+   ----------------------------------------------------------------------------
+   This is the v1 theme. It freezes the production stone palette so the Phase 0
+   migration is visually identical to what shipped before tokenization.
+
+   To swap palettes: copy this file to themes/<name>.css, override only the
+   semantic layer (everything below "SEMANTIC TOKENS"), and change the import
+   in app/globals.css.
+
+   Layer 1 (PALETTE) — raw color stops. Components MUST NOT consume these.
+   Layer 2 (SEMANTIC) — what components consume.
+   Layer 3 (UTILITY)  — type, spacing, radius, shadow, motion.
+   ============================================================================ */
+
+:root {
+  /* ─── L1: PALETTE ──────────────────────────────────────────────────────── */
+  /* Stone (neutral spine) */
+  --palette-stone-50:  #fafaf9;
+  --palette-stone-100: #f5f5f4;
+  --palette-stone-200: #e7e5e4;
+  --palette-stone-300: #d6d3d1;
+  --palette-stone-400: #a8a29e;
+  --palette-stone-500: #78716c;
+  --palette-stone-600: #57534e;
+  --palette-stone-700: #44403c;
+  --palette-stone-800: #292524;
+  --palette-stone-900: #1c1917;
+
+  /* Green (success) */
+  --palette-green-50:  #f0fdf4;
+  --palette-green-100: #dcfce7;
+  --palette-green-200: #bbf7d0;
+  --palette-green-500: #22c55e;
+  --palette-green-600: #16a34a;
+  --palette-green-700: #15803d;
+  --palette-green-800: #166534;
+
+  /* Amber (warning) */
+  --palette-amber-50:  #fffbeb;
+  --palette-amber-100: #fef3c7;
+  --palette-amber-200: #fde68a;
+  --palette-amber-500: #f59e0b;
+  --palette-amber-600: #d97706;
+  --palette-amber-700: #b45309;
+  --palette-amber-800: #92400e;
+
+  /* Red (danger) */
+  --palette-red-50:  #fef2f2;
+  --palette-red-100: #fee2e2;
+  --palette-red-200: #fecaca;
+  --palette-red-500: #ef4444;
+  --palette-red-600: #dc2626;
+  --palette-red-700: #b91c1c;
+  --palette-red-800: #991b1b;
+
+  /* Blue (info) */
+  --palette-blue-50:  #eff6ff;
+  --palette-blue-100: #dbeafe;
+  --palette-blue-200: #bfdbfe;
+  --palette-blue-500: #3b82f6;
+  --palette-blue-600: #2563eb;
+  --palette-blue-700: #1d4ed8;
+  --palette-blue-800: #1e40af;
+
+  /* Purple (role: admin) */
+  --palette-purple-100: #ede9fe;
+  --palette-purple-800: #5b21b6;
+
+  /* Indigo (accent — the product's color identity beyond the stone spine) */
+  --palette-indigo-50:  #eef2ff;
+  --palette-indigo-100: #e0e7ff;
+  --palette-indigo-200: #c7d2fe;
+  --palette-indigo-500: #6366f1;
+  --palette-indigo-600: #4f46e5;
+  --palette-indigo-700: #4338ca;
+  --palette-indigo-800: #3730a3;
+
+  /* ─── L2: SEMANTIC TOKENS — components consume these only ──────────────── */
+
+  /* Surfaces */
+  --surface-canvas:    var(--palette-stone-50);
+  --surface-card:      #ffffff;
+  --surface-muted:     var(--palette-stone-100);
+  --surface-subtle:    var(--palette-stone-50);
+  --surface-inverted:  var(--palette-stone-900);
+  --surface-overlay:   rgba(28, 25, 23, 0.5);
+
+  /* Text */
+  --text-primary:    var(--palette-stone-900);
+  --text-secondary:  var(--palette-stone-600);
+  --text-muted:      var(--palette-stone-400);
+  --text-disabled:   var(--palette-stone-300);
+  --text-inverted:   #ffffff;
+  --text-link:       var(--palette-stone-900);
+
+  /* Borders */
+  --border-subtle:   var(--palette-stone-100);
+  --border-default:  var(--palette-stone-200);
+  --border-strong:   var(--palette-stone-400);
+  --border-inverted: var(--palette-stone-900);
+
+  /* Status — success */
+  --status-success-bg:     var(--palette-green-50);
+  --status-success-border: var(--palette-green-200);
+  --status-success-text:   var(--palette-green-800);
+  --status-success-fill:   var(--palette-green-600);
+  --status-success-soft:   var(--palette-green-100);
+
+  /* Status — warning */
+  --status-warning-bg:     var(--palette-amber-50);
+  --status-warning-border: var(--palette-amber-200);
+  --status-warning-text:   var(--palette-amber-800);
+  --status-warning-fill:   var(--palette-amber-500);
+  --status-warning-soft:   var(--palette-amber-100);
+
+  /* Status — danger */
+  --status-danger-bg:      var(--palette-red-50);
+  --status-danger-border:  var(--palette-red-200);
+  --status-danger-text:    var(--palette-red-800);
+  --status-danger-fill:    var(--palette-red-600);
+  --status-danger-soft:    var(--palette-red-100);
+
+  /* Status — info */
+  --status-info-bg:        var(--palette-blue-50);
+  --status-info-border:    var(--palette-blue-200);
+  --status-info-text:      var(--palette-blue-800);
+  --status-info-fill:      var(--palette-blue-600);
+  --status-info-soft:      var(--palette-blue-100);
+
+  /* Verification brand framing (DESIGN.md §2.8) — the "verified by public
+     records" color. NOT a claim state: verified/self-reported/contradicted
+     keep using the success/warning/danger families. */
+  --verify-bg:     var(--palette-blue-50);
+  --verify-border: var(--palette-blue-200);
+  --verify-soft:   var(--palette-blue-100);
+  --verify-fill:   var(--palette-blue-600);
+  --verify-text:   var(--palette-blue-800);
+
+  /* Status — neutral */
+  --status-neutral-bg:     var(--palette-stone-100);
+  --status-neutral-border: var(--palette-stone-200);
+  --status-neutral-text:   var(--palette-stone-700);
+  --status-neutral-fill:   var(--palette-stone-500);
+  --status-neutral-soft:   var(--palette-stone-100);
+
+  /* Role badges */
+  --role-admin-bg:    var(--palette-purple-100);
+  --role-admin-text:  var(--palette-purple-800);
+  --role-attorney-bg: var(--palette-blue-100);
+  --role-attorney-text: var(--palette-blue-800);
+  --role-applicant-bg: var(--palette-stone-100);
+  --role-applicant-text: var(--palette-stone-700);
+  --role-guest-bg:    var(--palette-amber-100);
+  --role-guest-text:  var(--palette-amber-800);
+
+  /* Brand */
+  --brand-primary:        var(--palette-stone-900);
+  --brand-primary-hover:  var(--palette-stone-700);
+  --brand-primary-active: var(--palette-stone-800);
+  --brand-on-primary:     #ffffff;
+
+  /* Accent — the product's color identity beyond the neutral spine. Use for
+     primary-metric emphasis, sparklines, active states, data-viz fills. This is
+     NOT a status: success/warning/danger/info keep their semantic meaning. */
+  --accent-bg:     var(--palette-indigo-50);
+  --accent-border: var(--palette-indigo-200);
+  --accent-soft:   var(--palette-indigo-100);
+  --accent-fill:   var(--palette-indigo-600);
+  --accent-text:   var(--palette-indigo-700);
+
+  /* Data-viz — encode direction/magnitude in charts, deltas, sparklines.
+     Positive/negative are intentionally the success/danger hues so a rising
+     metric reads "good" and a falling one reads "bad" by default (override per
+     metric when up-is-bad, e.g. junk rate). */
+  --viz-positive: var(--palette-green-600);
+  --viz-negative: var(--palette-red-600);
+  --viz-track:    var(--palette-stone-100);
+  --viz-spark:    var(--palette-indigo-600);
+
+  /* Focus */
+  --focus-ring:        rgba(120, 113, 108, 0.45);  /* stone-500 @ 45% */
+  --focus-ring-offset: var(--surface-card);
+
+  /* ─── L3: UTILITY TOKENS ──────────────────────────────────────────────── */
+
+  /* Fonts — semantic names + backward-compat aliases.
+     Fraunces/Inter are self-hosted via next/font (app/layout.tsx), which
+     injects --font-fraunces / --font-inter on <html>. We compose them here
+     with the same fallbacks the old @import relied on. --font-mono stays
+     system mono (the old @import never loaded a webfont mono). */
+  --font-display: var(--font-fraunces), Georgia, ui-serif, serif;
+  --font-body:    var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  /* legacy aliases — code still references these */
+  --font-serif:   var(--font-display);
+  --font-sans:    var(--font-body);
+
+  /* Type scale */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3.25rem;    /* 52px — Fraunces display tightening */
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* Radius */
+  --radius-sm:   0.25rem;  /* 4px */
+  --radius-md:   0.375rem; /* 6px */
+  --radius-lg:   0.5rem;   /* 8px */
+  --radius-xl:   0.75rem;  /* 12px */
+  --radius-2xl:  1rem;     /* 16px */
+  --radius-full: 9999px;
+
+  /* Shadow */
+  --shadow-xs:    0 1px 1px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm:    0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:    0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg:    0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-focus: 0 0 0 3px var(--focus-ring);
+
+  /* Motion */
+  --duration-fast:    120ms;
+  --duration-base:    180ms;
+  --duration-slow:    300ms;
+  --ease-out:         cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:      cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Layout */
+  --max-content: 72rem;  /* 1152px — dashboards, lists */
+  --max-prose:   42rem;  /* 672px — wizards, articles */
+  --max-narrow:  24rem;  /* 384px — auth, single-form */
+}

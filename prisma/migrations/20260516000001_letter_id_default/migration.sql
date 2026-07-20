@@ -1,0 +1,1 @@
+-- Letter.id gains @default(cuid()) — client-side generation, no DB change needed

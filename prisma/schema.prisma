@@ -1,0 +1,591 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  attorney
+  applicant
+}
+
+enum CaseStatus {
+  draft
+  review
+  ready
+  filed
+}
+
+enum DocumentStatus {
+  missing
+  pending
+  uploaded
+  validated
+}
+
+enum LetterStatus {
+  draft
+  pending_review
+  submitted
+  final
+}
+
+enum ReviewRequestStatus {
+  pending
+  accepted
+  declined
+}
+
+enum TokenKind {
+  user_invite
+  user_verify
+  case_invite
+  case_guest
+  case_intake
+  letter_review
+  lead_consent
+  lead_preview
+  password_reset
+}
+
+enum TokenSubjectType {
+  user
+  case_record
+  letter
+  lead
+}
+
+enum LeadMaturity {
+  M0
+  M1
+  M2
+  M3
+  M4
+  M5
+  M6
+  M7
+}
+
+// ─── Unified Token table ────────────────────────────────────────────────────
+
+model Token {
+  id          String           @id @default(cuid())
+  kind        TokenKind
+  tokenHash   String           @unique
+  subjectType TokenSubjectType
+  subjectId   String
+  metadata    Json?
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  createdById String?
+
+  @@index([subjectType, subjectId])
+  @@index([kind])
+  @@index([expiresAt])
+}
+
+// ─── Users ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  name         String
+  role         UserRole
+  createdAt    DateTime @default(now())
+
+  phone          String?
+  verified       Boolean   @default(false)
+  plan           String?
+  draftBudget    Int?
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+
+  sessionVersion Int @default(1)
+  suspended      Boolean  @default(false)
+  supportAccessGrantedUntil DateTime?
+
+  // Self-petitioner beta (2026-07) — flag on the existing applicant role, not
+  // a new UserRole. See petitionhq/beta_onboarding_plan.md.
+  selfPetitionerBeta      Boolean   @default(false)
+  betaAgreementAcceptedAt DateTime?
+
+  // Attorney platform-terms acceptance (2026-07). Version-stamped so a terms
+  // update can force re-acceptance (gate compares ATTORNEY_TERMS_VERSION).
+  attorneyTermsAcceptedAt DateTime?
+  attorneyTermsVersion    String?
+  // Beta users' own drafting rules — same shape as FirmProfile.draftingRules
+  // (DraftingRules JSON), but stored on the User directly since applicants
+  // don't have a FirmProfile and shouldn't get one (that model is heavily
+  // attorney/billing-specific — /admin/firms lists every FirmProfile row
+  // unfiltered by role).
+  draftingRules Json?
+
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  subscriptionStatus   String?
+
+  ownedCases      Case[]          @relation("CaseOwner")
+  attorneyCases   Case[]          @relation("CaseAttorney")
+  claimedLeads    Lead[]          @relation("LeadClaimedBy")
+  firmProfile     FirmProfile?
+  messages        Message[]
+  sectionComments SectionComment[]
+  letterComments  LetterComment[]
+
+  leadClaimPayments LeadClaimPayment[]
+  draftUsages       DraftUsage[]
+  refundRequests    RefundRequest[]   @relation("RefundRequester")
+  refundDecisions   RefundRequest[]   @relation("RefundDecider")
+}
+
+// ─── Cases ──────────────────────────────────────────────────────────────────
+
+model Case {
+  id     String     @id @default(cuid())
+  formId String
+  title  String
+  status CaseStatus @default(draft)
+
+  formData   Json @default("{}")
+
+  // Attorney curation gate: approved/excluded evidence atom IDs (content hashes).
+  // NULL = un-curated ⇒ all atoms allowed in generated prose (see lib/claimLedger.ts).
+  // Stays NULL at lead-convert; written only by the gate UI after intake.
+  claimLedger Json?
+
+  ownerId    String?
+  owner      User?   @relation("CaseOwner",    fields: [ownerId],    references: [id])
+  attorneyId String?
+  attorney   User?   @relation("CaseAttorney", fields: [attorneyId], references: [id])
+
+  reviewStatus      ReviewRequestStatus?
+  reviewRequestedAt DateTime?
+  reviewRespondedAt DateTime?
+  reviewNote        String?
+
+  paymentStatus String  @default("unpaid")
+  paymentNotes  String?
+
+  nextFollowUp  DateTime?
+  nextAction    String?
+
+  filedAt       DateTime?
+  lockedAt      DateTime?
+
+  documents       Document[]
+  letters         Letter[]
+  messages        Message[]
+  sectionComments SectionComment[]
+  adminNotes      CaseNote[]
+  draftUsages     DraftUsage[]
+  refundRequests  RefundRequest[]
+
+  archivedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([attorneyId])
+  @@index([ownerId])
+  @@index([nextFollowUp])
+}
+
+// ─── Documents ──────────────────────────────────────────────────────────────
+
+model Document {
+  id             String         @id @default(cuid())
+  caseId         String
+  case           Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  requirementId  String
+  status         DocumentStatus @default(missing)
+  filename       String?
+  storedFilename String?
+  mimeType       String?
+  size           Int?
+  notes          String?
+  pastedText     String?
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([caseId, requirementId])
+}
+
+// ─── Letters ────────────────────────────────────────────────────────────────
+
+model Letter {
+  id               String       @id @default(cuid())
+  caseId           String
+  case             Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  requirementId    String
+  recommender      Json
+  selectedEvidence String[]
+  currentDraft     String?
+  qualityReport    Json?
+  status           LetterStatus @default(draft)
+
+  reviewerViewed    DateTime?
+  reviewerSubmitted DateTime?
+
+  versions LetterVersion[]
+  comments LetterComment[]
+
+  updatedAt DateTime @updatedAt
+}
+
+model LetterVersion {
+  id            String   @id @default(cuid())
+  letterId      String
+  letter        Letter   @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  content       String
+  qualityReport Json?
+  note          String?
+  createdAt     DateTime @default(now())
+}
+
+// ─── Messages ───────────────────────────────────────────────────────────────
+
+model Message {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id])
+  senderName String
+  senderRole UserRole
+  text       String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+// ─── Comments ───────────────────────────────────────────────────────────────
+
+model SectionComment {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sectionId  String
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  authorName String
+  authorRole UserRole
+  text       String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model LetterComment {
+  id         String   @id @default(cuid())
+  letterId   String
+  letter     Letter   @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  authorName String
+  authorRole UserRole
+  text       String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+// ─── Logs ───────────────────────────────────────────────────────────────────
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  kind      String
+  caseId    String?
+  caseTitle String?
+  actorId   String?
+  actorName String?
+  status    String   @default("sent")
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model CaseNote {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  authorId   String
+  authorName String
+  text       String
+  createdAt  DateTime @default(now())
+
+  @@index([caseId])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actorName String?
+  actorRole String?
+  caseId    String?
+  caseTitle String?
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([caseId])
+}
+
+// ─── Firm Profiles ──────────────────────────────────────────────────────────
+
+model FirmProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  firmName        String?
+  calendlyUrl     String?
+  specialties     String[] @default([])
+  networkTier     String   @default("standard")
+  trialCredits    Int      @default(3)
+  purchasedCredits Int     @default(0)
+  trialExpiresAt  DateTime?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?  @unique
+  subscriptionStatus   String?
+  draftingRules   Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creditTransactions CreditTransaction[]
+}
+
+// ─── Credit Transactions ───────────────────────────────────────────────────
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  firmId      String
+  firm        FirmProfile @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  type        String
+  amount      Int
+  balance     Int
+  description String?
+  stripeSessionId String?
+  leadId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([firmId, createdAt])
+}
+
+// ─── Leads ──────────────────────────────────────────────────────────────────
+
+model Lead {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  resultToken String   @unique
+  name      String?
+  tier      String?
+  score     Int?
+  formData  Json     @default("{}")
+  source    String   @default("check")
+  refCode   String?
+  status    String   @default("new")
+  notes     String?
+  dossierStatus  String  @default("idle")
+  dossierPdfPath String?
+  caseId         String? @unique
+
+  claimedByUserId        String?
+  claimedBy              User?     @relation("LeadClaimedBy", fields: [claimedByUserId], references: [id])
+  claimedAt              DateTime?
+  applicantStatus        String    @default("unclaimed")
+  rejectionNote          String?
+  callOutcome            String?
+
+  // Nurture drip tracking (B-4)
+  nurtureStep            Int       @default(0)  // 0=none, 1=day1 sent, 2=day7 sent, 3=day30 sent
+  lastNurtureAt          DateTime?
+
+  // Self-petitioner beta invite (2026-07) — single-send lock. Set atomically
+  // via updateMany({ where: { betaInvitedAt: null } }) so exactly one invite
+  // email can ever be sent per lead (admin per-lead "Invite to beta" action).
+  // Never reset once an invite email has been attempted (at-most-once).
+  betaInvitedAt          DateTime?
+
+  // Verification (V1.1)
+  maturity         LeadMaturity @default(M1)
+  trustScore       Int          @default(0)
+  verifiedClaims   Json?
+  maturityHistory  Json?
+  lastVerifiedAt   DateTime?
+
+  // ORCID OAuth — applicant proved account ownership ("Sign in with ORCID")
+  orcidAuthenticated  Boolean   @default(false)
+  orcidVerifiedId     String?   // authenticated ORCID iD (e.g. "0000-0001-2345-6789")
+
+  // Admin identity attestation — escape hatch for pilots whose auto-verification
+  // score stays below 60 despite valid credentials (e.g. thin ORCID profile)
+  adminAttested       Boolean   @default(false)
+  adminAttestedBy     String?   // admin session email
+  adminAttestedAt     DateTime?
+  adminAttestedReason String?
+
+  claimPayment         LeadClaimPayment?
+  verificationEvents   LeadVerificationEvent[]
+  outcomes             LeadOutcome[]
+
+  capturedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([capturedAt])
+  @@index([claimedAt])
+  @@index([tier])
+  @@index([status])
+  @@index([dossierStatus])
+  @@index([applicantStatus])
+  @@index([claimedByUserId])
+  @@index([maturity])
+}
+
+// ─── Lead Verification Events (V1.2) ────────────────────────────────────────
+
+model LeadVerificationEvent {
+  id              String   @id @default(cuid())
+  leadId          String
+  source          String
+  action          String
+  result          String
+  claimKey        String?
+  evidenceRef     String?
+  confidenceScore Float?
+  rawResponse     Json?
+  attorneyVisible Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([leadId, source])
+}
+
+model WebhookEvent {
+  id          String   @id
+  provider    String
+  type        String
+  receivedAt  DateTime @default(now())
+
+  @@index([provider, receivedAt])
+}
+
+// ─── Lead Claim Payments (Pricing-V3) ──────────────────────────────────────
+
+model LeadClaimPayment {
+  id              String    @id @default(cuid())
+  leadId          String    @unique
+  userId          String
+  amountCents     Int
+  stripeSessionId String    @unique
+  status          String    @default("pending")
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+// ─── Refund Requests (V5.4) ────────────────────────────────────────────────
+
+model RefundRequest {
+  id              String    @id @default(cuid())
+  caseId          String
+  case            Case      @relation(fields: [caseId], references: [id])
+  attorneyId      String
+  attorney        User      @relation("RefundRequester", fields: [attorneyId], references: [id])
+  reason          String    // material_misrepresentation | applicant_ghost | other
+  explanation     String
+  evidenceR2Key   String?   // optional file upload key in R2
+  status          String    @default("pending") // pending | approved | denied | refunded
+  decidedAt       DateTime?
+  decidedById     String?
+  decidedBy       User?     @relation("RefundDecider", fields: [decidedById], references: [id])
+  decisionNotes   String?
+  stripeRefundId  String?
+  createdAt       DateTime  @default(now())
+
+  @@index([status])
+  @@index([attorneyId])
+  @@index([caseId])
+}
+
+// ─── AI Draft Usage Metering (Pricing-V3) ──────────────────────────────────
+
+model DraftUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  caseId    String
+  letterId  String
+  model     String
+  tokens    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  case Case @relation(fields: [caseId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([caseId])
+}
+
+// ─── LLM Usage Telemetry (A4 — unit economics) ─────────────────────────────
+
+model LlmUsage {
+  id        String   @id @default(cuid())
+  caseId    String?
+  leadId    String?
+  route     String
+  model     String
+  tokensIn  Int
+  tokensOut Int
+  cents     Float
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([caseId])
+  @@index([createdAt])
+}
+
+// ─── Pilot Lead Outcomes (PILOT-1) ─────────────────────────────────────────
+// Tracks concierge-pilot deliveries to the first firm and their outcomes.
+// One record per delivery; status updated in-place as the lead progresses.
+
+model LeadOutcome {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  pilotFirm   String   // firm name or slug (free-form for now)
+  status      String   @default("delivered") // delivered | consult_booked | signed | rejected_junk
+  reason      String?  // free-form note; required when status = rejected_junk
+  revenueCents Int?    // signed revenue in USD cents (nullable until signed)
+  deliveredAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@index([deliveredAt])
+}
+
+model FunnelEvent {
+  id        String   @id @default(cuid())
+  sessionId String?
+  userId    String?
+  leadId    String?
+  event     String
+  props     Json?
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([createdAt])
+  @@index([leadId])
+}

@@ -1,0 +1,64 @@
+name: Deploy
+
+# Continuous deployment — fires only after the CI workflow finishes on main,
+# and only if it passed. This is a separate workflow (rather than its own
+# `on: push` trigger) specifically so deploy can never race ahead of test
+# results for the same commit.
+# ARCHIVED (July 2026): production infrastructure has been decommissioned, so
+# automatic deployment is disabled — the original trigger was:
+#
+#   workflow_run: { workflows: ["CI"], types: [completed], branches: [main] }
+#
+# The file is retained as a reference implementation of the deployment pipeline
+# (SHA-pinned image tags, pre-deploy database backup, post-deploy health check,
+# automatic rollback on failure). Manual dispatch only; it will not run on push.
+on:
+  workflow_dispatch:
+
+# Never run two deploys at once; queue instead of cancelling so a deploy in
+# flight always finishes (cancelling mid-deploy could leave the server on a
+# half-applied migration).
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load deploy key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Trust the server's host key
+        run: ssh-keyscan -H "${{ vars.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        # The deploy key on the server is restricted to a forced command
+        # (cd /opt/petitionhq && bash scripts/deploy.sh) — whatever we pass
+        # here is ignored server-side, but spelling it out keeps this step
+        # readable. deploy.sh itself backs up the DB, migrates, restarts,
+        # health-checks the new container, and rolls back automatically if
+        # the health check fails (see scripts/deploy.sh).
+        run: |
+          ssh "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
+            "cd /opt/petitionhq && bash scripts/deploy.sh"
+
+      - name: Verify public health endpoint
+        # A second, independent check from outside the server — confirms
+        # DNS/TLS/Caddy/the whole path work, not just that the container
+        # answers on the docker network (deploy.sh already checked that).
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://petitionhq.us/api/health || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "Healthy ($code)"
+              exit 0
+            fi
+            echo "Attempt $i: got $code, retrying..."
+            sleep 3
+          done
+          echo "::error::Public health check failed after deploy"
+          exit 1

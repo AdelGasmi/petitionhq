@@ -1,0 +1,94 @@
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Next.js build outputs ─────────────────────────────────────────────────────
+.next/
+out/
+dist/
+build/
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# ── Local data / uploads ──────────────────────────────────────────────────────
+data/
+uploads/
+tmp/
+
+# ── Claude Code config ────────────────────────────────────────────────────────
+# Contains machine-specific tool permissions — never commit
+.claude/
+
+# ── Client template PDFs ──────────────────────────────────────────────────────
+# 19 MB of binary PDFs — store in R2 or share separately
+templates/
+
+
+# ── Internal business docs ────────────────────────────────────────────────────
+# Keep out of public/shared repos
+gtm-plan.md
+STATUS.md
+CREDENTIALS_CHECKLIST.md
+LOCAL_OPS.md
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+._*
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.pem
+*.key
+
+# ── Deploy state (server-local, written by scripts/deploy.sh) ────────────────
+.last-deployed-sha
+
+# ── Internal strategy & audit docs — never publish ────────────────────────────
+# Contain business strategy, security findings, and third-party contact data.
+audit.md
+honest_grading.md
+gtm_readiness_audit.md
+gtm-plan.md
+attorney_outreach_playbook.md
+outreach_wave_1.md
+outreach_targets.md
+consolidation.md
+pre_launch_readiness.md
+beta_onboarding_plan.md
+self_petitioner_beta.md
+final_enhancements.md
+codebase_refactor.md
+quick_wins_todo.md
+product.md
+gtm-social-playbook.md
+temp.md
+REACTIVATION_PLAYBOOK.md
+INFRASTRUCTURE_HOWTO.md

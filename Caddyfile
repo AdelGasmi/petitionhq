@@ -1,0 +1,25 @@
+petitionhq.us {
+    reverse_proxy app:3000 {
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        # Long timeouts for streaming brief/letter drafts (up to 10 min)
+        transport http {
+            dial_timeout 10s
+            response_header_timeout 600s
+            read_timeout 600s
+        }
+    }
+
+    # Aggressive caching for Next.js static assets
+    handle /_next/static/* {
+        header Cache-Control "public, max-age=31536000, immutable"
+        reverse_proxy app:3000
+    }
+
+    log {
+        output stderr
+        format console
+        level INFO
+    }
+}

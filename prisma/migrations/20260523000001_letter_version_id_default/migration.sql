@@ -1,0 +1,3 @@
+-- AlterTable: add cuid() default to LetterVersion.id
+-- Existing rows already have IDs; this only affects future inserts without explicit ID.
+-- No-op on existing data.

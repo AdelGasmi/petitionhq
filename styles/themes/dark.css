@@ -1,0 +1,113 @@
+/* ============================================================================
+   PetitionHQ — Dark theme (data-theme="dark")
+   ----------------------------------------------------------------------------
+   Overrides the semantic layer only (L2). L1 palette stops and L3 utility
+   tokens (type scale, radius, shadow, motion) are inherited from default.css.
+
+   To activate for QA: document.documentElement.setAttribute('data-theme','dark')
+   No user-facing toggle is shipped yet — see T6-3 / DESIGN.md §8.3.
+   ============================================================================ */
+
+[data-theme="dark"] {
+  /* Tell the UA to render native controls (inputs, selects, scrollbars, date
+     pickers) dark by default — without this, an un-tokened <input> falls back to
+     a white field on the dark canvas. */
+  color-scheme: dark;
+
+  /* ─── Surfaces ──────────────────────────────────────────────────────────── */
+  --surface-canvas:    #0c0a09;                /* deeper than stone-950 */
+  --surface-card:      var(--palette-stone-900);
+  --surface-muted:     var(--palette-stone-800);
+  --surface-subtle:    #141210;                /* between canvas and card */
+  --surface-inverted:  var(--palette-stone-50); /* flips to light */
+  --surface-overlay:   rgba(0, 0, 0, 0.65);
+
+  /* ─── Text ──────────────────────────────────────────────────────────────── */
+  --text-primary:   var(--palette-stone-50);
+  --text-secondary: var(--palette-stone-300);
+  --text-muted:     var(--palette-stone-500);
+  --text-disabled:  var(--palette-stone-700);
+  --text-inverted:  var(--palette-stone-900);  /* dark text on light button */
+  --text-link:      var(--palette-stone-200);
+
+  /* ─── Borders ───────────────────────────────────────────────────────────── */
+  --border-subtle:   var(--palette-stone-800);
+  --border-default:  var(--palette-stone-700);
+  --border-strong:   var(--palette-stone-500);
+  --border-inverted: var(--palette-stone-100);
+
+  /* ─── Status — success (dark-bg variants) ───────────────────────────────── */
+  --status-success-bg:     #052e16;
+  --status-success-border: #166534;
+  --status-success-text:   var(--palette-green-200);
+  --status-success-fill:   var(--palette-green-500);
+  --status-success-soft:   #0a3d20;
+
+  /* ─── Status — warning ──────────────────────────────────────────────────── */
+  --status-warning-bg:     #292000;
+  --status-warning-border: #92400e;
+  --status-warning-text:   var(--palette-amber-200);
+  --status-warning-fill:   var(--palette-amber-500);
+  --status-warning-soft:   #332800;
+
+  /* ─── Status — danger ───────────────────────────────────────────────────── */
+  --status-danger-bg:      #2d0000;
+  --status-danger-border:  #991b1b;
+  --status-danger-text:    #fca5a5;
+  --status-danger-fill:    var(--palette-red-500);
+  --status-danger-soft:    #3b0000;
+
+  /* ─── Status — info ─────────────────────────────────────────────────────── */
+  --status-info-bg:        #0c1a36;
+  --status-info-border:    #1e40af;
+  --status-info-text:      var(--palette-blue-200);
+  --status-info-fill:      var(--palette-blue-500);
+  --status-info-soft:      #112040;
+
+  /* ─── Verification framing ──────────────────────────────────────────────── */
+  --verify-bg:     #0c1a36;
+  --verify-border: #1e40af;
+  --verify-soft:   #112040;
+  --verify-fill:   var(--palette-blue-500);
+  --verify-text:   var(--palette-blue-200);
+
+  /* ─── Status — neutral ──────────────────────────────────────────────────── */
+  --status-neutral-bg:     var(--palette-stone-800);
+  --status-neutral-border: var(--palette-stone-700);
+  --status-neutral-text:   var(--palette-stone-200);
+  --status-neutral-fill:   var(--palette-stone-400);
+  --status-neutral-soft:   var(--palette-stone-800);
+
+  /* ─── Role badges ───────────────────────────────────────────────────────── */
+  --role-admin-bg:       #2e1065;
+  --role-admin-text:     #c4b5fd;
+  --role-attorney-bg:    #0c1a36;
+  --role-attorney-text:  var(--palette-blue-200);
+  --role-applicant-bg:   var(--palette-stone-800);
+  --role-applicant-text: var(--palette-stone-200);
+  --role-guest-bg:       #292000;
+  --role-guest-text:     var(--palette-amber-200);
+
+  /* ─── Brand — inverts: light primary button on dark canvas ─────────────── */
+  --brand-primary:        var(--palette-stone-100);
+  --brand-primary-hover:  var(--palette-stone-200);
+  --brand-primary-active: var(--palette-stone-300);
+  --brand-on-primary:     var(--palette-stone-900);
+
+  /* ─── Accent (indigo, lifted for dark surfaces) ─────────────────────────── */
+  --accent-bg:     #1e1b4b;
+  --accent-border: #3730a3;
+  --accent-soft:   #272264;
+  --accent-fill:   var(--palette-indigo-500);
+  --accent-text:   var(--palette-indigo-200);
+
+  /* ─── Data-viz ──────────────────────────────────────────────────────────── */
+  --viz-positive: var(--palette-green-500);
+  --viz-negative: var(--palette-red-500);
+  --viz-track:    var(--palette-stone-800);
+  --viz-spark:    var(--palette-indigo-500);
+
+  /* ─── Focus ─────────────────────────────────────────────────────────────── */
+  --focus-ring:        rgba(214, 211, 209, 0.4);  /* stone-300 @ 40% */
+  --focus-ring-offset: var(--surface-card);
+}
